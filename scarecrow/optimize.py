@@ -150,10 +150,10 @@ def optimize(
     if config is None:
         config = Config()
 
-    det_model = yolo.load(weights)
-    device = next(det_model.parameters()).device
+    model = yolo.load(weights)
+    device = next(model.parameters()).device
 
-    dataset, skipped = _load_plates(Path(image_path), det_model, device)
+    dataset, skipped = _load_plates(Path(image_path), model, device)
     if not dataset:
         detail = f" (detected {skipped} < {MIN_PLATE_WIDTH}px)" if skipped else ""
         raise ValueError(f"No usable plates in {image_path}{detail}")
@@ -173,20 +173,20 @@ def optimize(
 
     for step in range(config.steps):
         composited = _composite_letterbox(pattern, dataset, config.imgsz)
-        det_losses = []
+        losses = []
         for _ in range(config.eot_samples):
             augmented = eot_transform(composited, rng)
-            _, scores = yolo.detect(det_model, augmented)
-            det_losses.append(scores.max(dim=-1).values.mean())
+            _, scores = yolo.detect(model, augmented)
+            losses.append(scores.max(dim=-1).values.mean())
 
-        det_agg = torch.logsumexp(TAU * torch.stack(det_losses), dim=0).div(TAU)
-        (grad_det,) = torch.autograd.grad(det_agg, pattern)
-        pattern.grad = grad_det
+        loss = torch.logsumexp(TAU * torch.stack(losses), dim=0).div(TAU)
+        (grad,) = torch.autograd.grad(loss, pattern)
+        pattern.grad = grad
 
         opt.step()
         pattern.data.clamp_(0, 1)
 
         if on_step:
-            on_step(step, sum(v.item() for v in det_losses) / config.eot_samples)
+            on_step(step, sum(v.item() for v in losses) / config.eot_samples)
 
     return pattern.detach().squeeze()

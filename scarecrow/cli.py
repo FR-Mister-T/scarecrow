@@ -16,7 +16,7 @@ def _cmd_generate(args) -> int:
 
     def on_step(step, loss):
         if step % 25 == 0 or step == config.steps - 1:
-            print(f"step {step:4d}  det={loss:.4f}")
+            print(f"step {step:4d}  loss={loss:.4f}")
 
     pattern = optimize(args.input, args.weights, config, on_step=on_step)
     pattern = pattern.cpu().numpy()
