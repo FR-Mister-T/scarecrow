@@ -117,20 +117,17 @@ def _nms(boxes: torch.Tensor, scores: torch.Tensor, iou_thresh: float) -> torch.
     Boxes are (N, 4) corners (x1, y1, x2, y2).
     """
     order = scores.argsort(descending=True)
+    areas = (boxes[:, 2] - boxes[:, 0]) * (boxes[:, 3] - boxes[:, 1])
     keep = []
     while order.numel() > 0:
         i = order[0]
         keep.append(i)
-        if order.numel() == 1:
-            break
         rest = order[1:]
         xx1 = torch.max(boxes[i, 0], boxes[rest, 0])
         yy1 = torch.max(boxes[i, 1], boxes[rest, 1])
         xx2 = torch.min(boxes[i, 2], boxes[rest, 2])
         yy2 = torch.min(boxes[i, 3], boxes[rest, 3])
         inter = (xx2 - xx1).clamp(min=0) * (yy2 - yy1).clamp(min=0)
-        area_i = (boxes[i, 2] - boxes[i, 0]) * (boxes[i, 3] - boxes[i, 1])
-        area_rest = (boxes[rest, 2] - boxes[rest, 0]) * (boxes[rest, 3] - boxes[rest, 1])
-        iou = inter / (area_i + area_rest - inter)
+        iou = inter / (areas[i] + areas[rest] - inter)
         order = rest[iou <= iou_thresh]
     return torch.stack(keep)
