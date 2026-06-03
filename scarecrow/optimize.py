@@ -13,6 +13,17 @@ PATTERN_H, PATTERN_W = 32, 128
 MIN_PLATE_WIDTH = 30
 TAU = 3.0  # LSE temperature over EoT samples (>= 10 is unstable)
 
+# EoT augmentation ranges:
+ROT_DEG = 10  # rotation in degrees
+TILT_DEG = 20  # vertical perspective in degrees
+PAN_DEG = 25  # horizontal perspective in degrees
+RADIAL_K1 = 0.15  # lens distortion coefficient
+BRIGHTNESS = 0.1  # fraction around 1.0
+CONTRAST = 0.2  # fraction around 1.0
+BLUR_SIGMA = (0.1, 1.0)  # Gaussian blur std
+NOISE_STD = (0.005, 0.03)  # additive Gaussian noise std
+DOWNSCALE = (0.5, 1.2)  # resample factor for resolution loss
+
 
 @dataclass
 class PlateData:
@@ -54,13 +65,14 @@ def eot_transform(images: torch.Tensor, rng: torch.Generator) -> torch.Tensor:
         return torch.empty(shape, device=device).uniform_(low, high, generator=rng)
 
     # Radial distortion + rotation + perspective, composed into one grid_sample
-    rot = draw(-10, 10, B)  # degrees
-    tilt = draw(-20, 20, B)
-    pan = draw(-25, 25, B)
-    k1 = draw(-0.15, 0.15).item()
+    rot = draw(-ROT_DEG, ROT_DEG, B)
+    tilt = draw(-TILT_DEG, TILT_DEG, B)
+    pan = draw(-PAN_DEG, PAN_DEG, B)
+    k1 = draw(-RADIAL_K1, RADIAL_K1).item()
 
     rad = torch.deg2rad(rot)
     cos_r, sin_r = torch.cos(rad), torch.sin(rad)
+    # perspective coefficients; /2 keeps the keystone effect mild
     px = torch.sin(torch.deg2rad(pan)) / 2.0
     py = torch.sin(torch.deg2rad(tilt)) / 2.0
 
@@ -88,23 +100,24 @@ def eot_transform(images: torch.Tensor, rng: torch.Generator) -> torch.Tensor:
         images, grid, mode="bilinear", padding_mode="reflection", align_corners=True
     )
 
-    brightness = draw(0.9, 1.1, B, 1, 1, 1)
+    brightness = draw(1 - BRIGHTNESS, 1 + BRIGHTNESS, B, 1, 1, 1)
     images = images * brightness
 
-    contrast = draw(0.8, 1.2, B, 1, 1, 1)
+    contrast = draw(1 - CONTRAST, 1 + CONTRAST, B, 1, 1, 1)
     images = (images - 0.5) * contrast + 0.5
 
-    sigma = draw(0.1, 1.0).item()
+    # 3x3 Gaussian blur
+    sigma = draw(*BLUR_SIGMA).item()
     ax = torch.arange(3, device=device, dtype=torch.float32) - 1
     kernel = torch.exp(-0.5 * (ax / sigma) ** 2)
     kernel = kernel / kernel.sum()
     kernel_2d = (kernel[:, None] * kernel[None, :]).view(1, 1, 3, 3).expand(C, -1, -1, -1)
     images = F.conv2d(F.pad(images, [1, 1, 1, 1], mode="reflect"), kernel_2d, groups=C)
 
-    noise_std = draw(0.005, 0.03).item()
+    noise_std = draw(*NOISE_STD).item()
     images = images + torch.randn(B, C, H, W, device=device, generator=rng) * noise_std
 
-    scale = draw(0.5, 1.2).item()
+    scale = draw(*DOWNSCALE).item()
     nh, nw = int(H * scale), int(W * scale)
     images = F.interpolate(
         F.interpolate(images, size=(nh, nw), mode="bilinear", align_corners=False),
