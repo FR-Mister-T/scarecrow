@@ -8,7 +8,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.export.passes import move_to_device_pass
 
-DEFAULT_WEIGHTS_FILENAME = "license-plate-finetune-v1n.pt2"
+BUNDLED_WEIGHTS_FILENAME = "license-plate-finetune-v1n.pt2"
 BUNDLED_WEIGHTS_SHA256 = "1404fd70f09f2c9fe20c292534b1821b7c8749421fae9cf9fd45a0279c4d9ce8"
 
 
@@ -19,13 +19,13 @@ def _verify_bundled_weights(path: str) -> None:
     if actual != BUNDLED_WEIGHTS_SHA256:
         raise RuntimeError(
             f"SHA-256 mismatch for {path}: expected {BUNDLED_WEIGHTS_SHA256}, got {actual}. "
-            f"Rename the file if it is not the bundled {DEFAULT_WEIGHTS_FILENAME}."
+            f"Rename the file if it is not the bundled {BUNDLED_WEIGHTS_FILENAME}."
         )
 
 
 def load(weights: str, device: str | None = None) -> nn.Module:
     """Load detection model with frozen weights."""
-    if Path(weights).name == DEFAULT_WEIGHTS_FILENAME:
+    if Path(weights).name == BUNDLED_WEIGHTS_FILENAME:
         _verify_bundled_weights(weights)
     if device is None:
         device = "cuda" if torch.cuda.is_available() else "cpu"

@@ -7,7 +7,7 @@ from pathlib import Path
 from scarecrow import frame, ocr
 from scarecrow import model as yolo
 from scarecrow.io import image_paths, load, load_pattern, save, save_pattern
-from scarecrow.model import DEFAULT_WEIGHTS_FILENAME
+from scarecrow.model import BUNDLED_WEIGHTS_FILENAME
 from scarecrow.optimize import MIN_PLATE_WIDTH, Config, optimize
 
 
@@ -168,7 +168,7 @@ def main() -> int:
 
     gen = sub.add_parser("generate", help="Generate adversarial frame pattern")
     gen.add_argument("input", metavar="IMAGE", help="Plate image file")
-    gen.add_argument("--weights", metavar="MODEL.pt2", default=DEFAULT_WEIGHTS_FILENAME, help="Detector .pt2 file")
+    gen.add_argument("--weights", metavar="MODEL.pt2", default=BUNDLED_WEIGHTS_FILENAME, help="Detector .pt2 file")
     gen.add_argument("--steps", metavar="N", type=int, default=1000, help="Optimization steps")
     gen.add_argument("--seed", metavar="N", type=int, default=None, help="Reproducible optimization seed")
     gen.add_argument("-o", "--output", metavar="PATTERN.png", help="Output pattern path")
@@ -176,13 +176,13 @@ def main() -> int:
     ap = sub.add_parser("apply", help="Apply pattern to a plate image")
     ap.add_argument("input", metavar="IMAGE", help="Input image")
     ap.add_argument("--pattern", metavar="PATTERN.png", required=True, help="Generated frame pattern PNG")
-    ap.add_argument("--weights", metavar="MODEL.pt2", default=DEFAULT_WEIGHTS_FILENAME, help="Detector .pt2 file")
+    ap.add_argument("--weights", metavar="MODEL.pt2", default=BUNDLED_WEIGHTS_FILENAME, help="Detector .pt2 file")
     ap.add_argument("-o", "--output", metavar="OUT", help="Output image path")
 
     ev = sub.add_parser("eval", help="Evaluate pattern effectiveness")
     ev.add_argument("input", metavar="INPUT", help="Image file or directory")
     ev.add_argument("--pattern", metavar="PATTERN.png", required=True, help="Generated frame pattern PNG")
-    ev.add_argument("--weights", metavar="MODEL.pt2", default=DEFAULT_WEIGHTS_FILENAME, help="Detector .pt2 file")
+    ev.add_argument("--weights", metavar="MODEL.pt2", default=BUNDLED_WEIGHTS_FILENAME, help="Detector .pt2 file")
     ev.add_argument("--json", action="store_true", help="Print machine-readable JSON")
     ev.add_argument("--ocr", action="store_true", help="Also run RapidOCR on clean/adversarial plate crops")
 
