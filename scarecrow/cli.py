@@ -5,8 +5,10 @@ import sys
 from pathlib import Path
 
 from scarecrow import frame, ocr
+from scarecrow import model as yolo
 from scarecrow.io import image_paths, load, load_pattern, save, save_pattern
 from scarecrow.model import DEFAULT_WEIGHTS_FILENAME
+from scarecrow.optimize import MIN_PLATE_WIDTH, Config, optimize
 
 
 def _default_pattern_path(input_path: str) -> str:
@@ -16,8 +18,6 @@ def _default_pattern_path(input_path: str) -> str:
 
 
 def _cmd_generate(args) -> int:
-    from scarecrow.optimize import Config, optimize
-
     config = Config(steps=args.steps, seed=args.seed)
 
     def on_step(step, loss):
@@ -33,8 +33,6 @@ def _cmd_generate(args) -> int:
 
 
 def _cmd_apply(args) -> int:
-    from scarecrow import model as yolo
-
     img = load(args.input)
     pattern = load_pattern(args.pattern)
 
@@ -52,9 +50,6 @@ def _cmd_apply(args) -> int:
 
 
 def _cmd_eval(args) -> int:
-    from scarecrow import model as yolo
-    from scarecrow.optimize import MIN_PLATE_WIDTH
-
     yolo_model = yolo.load(args.weights)
     pattern = load_pattern(args.pattern)
     paths = image_paths(Path(args.input))
@@ -111,10 +106,7 @@ def _cmd_eval(args) -> int:
         conf_clean_sum += clean_conf
         conf_adv_sum += adv_conf
 
-        status = "EVADED" if was_evaded else f"conf {clean_conf:.3f} -> {adv_conf:.3f}"
-
         if ocr_reader is not None:
-            ocr_parts = []
             for bbox in bboxes:
                 clean_crop = ocr.crop_for_ocr(img, bbox)
                 adv_crop = ocr.crop_for_ocr(adv, bbox)
@@ -126,12 +118,6 @@ def _cmd_eval(args) -> int:
                     if changed:
                         ocr_changed += 1
                     ocr_rows.append({"clean": clean_text, "framed": adv_text, "changed": changed})
-                    ocr_parts.append(
-                        f'"{clean_text}" -> "{adv_text}"' if changed
-                        else f'"{clean_text}" [unchanged]'
-                    )
-            if ocr_parts:
-                status += "  OCR: " + ", ".join(ocr_parts)
 
         rows.append(
             {
@@ -147,6 +133,14 @@ def _cmd_eval(args) -> int:
         )
 
         if not args.json:
+            status = "EVADED" if was_evaded else f"conf {clean_conf:.3f} -> {adv_conf:.3f}"
+            if ocr_rows:
+                parts = [
+                    f'"{o["clean"]}" -> "{o["framed"]}"' if o["changed"]
+                    else f'"{o["clean"]}" [unchanged]'
+                    for o in ocr_rows
+                ]
+                status += "  OCR: " + ", ".join(parts)
             print(f"{p.name}  {status}")
 
     if args.json:
