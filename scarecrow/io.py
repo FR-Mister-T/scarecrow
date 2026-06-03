@@ -3,8 +3,6 @@ from pathlib import Path
 import cv2
 import numpy as np
 
-IMAGE_EXTS = {".jpg", ".jpeg", ".png"}
-
 
 def image_paths(path: Path) -> list[Path]:
     """Resolve a file or directory to a list of image paths."""
@@ -12,7 +10,8 @@ def image_paths(path: Path) -> list[Path]:
         raise FileNotFoundError(f"Not found: {path}")
     if path.is_file():
         return [path]
-    return sorted(p for p in path.iterdir() if p.suffix.lower() in IMAGE_EXTS)
+    extensions = {".jpg", ".jpeg", ".png"}
+    return sorted(p for p in path.iterdir() if p.suffix.lower() in extensions)
 
 
 def load(path: str | Path) -> np.ndarray:
