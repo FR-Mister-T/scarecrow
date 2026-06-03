@@ -85,7 +85,7 @@ def eot_transform(images: torch.Tensor, rng: torch.Generator) -> torch.Tensor:
     grid = (warped[:, :2] / warped[:, 2:3]).permute(0, 2, 1).reshape(B, H, W, 2)
 
     images = F.grid_sample(
-        images, grid, mode="bilinear", padding_mode="reflection", align_corners=False
+        images, grid, mode="bilinear", padding_mode="reflection", align_corners=True
     )
 
     brightness = 1.0 + 0.2 * (torch.rand(B, 1, 1, 1, device=device, generator=rng) - 0.5)
