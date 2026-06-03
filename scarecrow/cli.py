@@ -11,12 +11,6 @@ from scarecrow.model import DEFAULT_WEIGHTS_FILENAME
 from scarecrow.optimize import MIN_PLATE_WIDTH, Config, optimize
 
 
-def _default_pattern_path(input_path: str) -> str:
-    """Default generated pattern path for an input image."""
-    p = Path(input_path)
-    return str(p.with_name(f"{p.stem}_pattern.png"))
-
-
 def _cmd_generate(args) -> int:
     config = Config(steps=args.steps, seed=args.seed)
 
@@ -26,7 +20,7 @@ def _cmd_generate(args) -> int:
 
     pattern = optimize(args.input, args.weights, config, on_step=on_step)
     pattern = pattern.cpu().numpy()
-    out = args.output or _default_pattern_path(args.input)
+    out = args.output or str(Path(args.input).with_name(f"{Path(args.input).stem}_pattern.png"))
     save_pattern(pattern, out)
     print(f"Saved pattern to {out}")
     return 0
