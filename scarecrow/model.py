@@ -13,7 +13,7 @@ BUNDLED_WEIGHTS_SHA256 = "1404fd70f09f2c9fe20c292534b1821b7c8749421fae9cf9fd45a0
 
 
 def _verify_bundled_weights(path: str) -> None:
-    """Verify a weights file matches BUNDLED_WEIGHTS_SHA256."""
+    """Raise if the file's SHA-256 does not match the pinned bundled weights hash."""
     with open(path, "rb") as f:
         actual = hashlib.file_digest(f, "sha256").hexdigest()
     if actual != BUNDLED_WEIGHTS_SHA256:
@@ -41,9 +41,10 @@ def load(weights: str, device: str | None = None) -> nn.Module:
 
 
 def detect(model: nn.Module, images: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-    """Differentiable forward pass. images: (B, 3, H, W) float32 [0, 1], RGB.
+    """Differentiable forward pass through the detector. images is a (B, 3, H, W)
+    batch of RGB tensors in [0, 1].
 
-    Returns boxes (B, N, 4) xywh and max class score (B, N).
+    Returns boxes (B, N, 4) as (cx, cy, w, h) and each box's max class score (B, N).
     """
     raw = model(images)[0]
     # 4 box coords + nc class scores per prediction:
@@ -112,7 +113,9 @@ def predict(
 
 
 def _nms(boxes: torch.Tensor, scores: torch.Tensor, iou_thresh: float) -> torch.Tensor:
-    """NMS for single-class detection. boxes: (N, 4) xyxy, scores: (N,)."""
+    """Drop boxes that overlap a higher scoring one by more than iou_thresh.
+    Boxes are (N, 4) corners (x1, y1, x2, y2).
+    """
     order = scores.argsort(descending=True)
     keep = []
     while order.numel() > 0:

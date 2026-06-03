@@ -30,14 +30,16 @@ class Config:
 
 
 def composite(images: torch.Tensor, masks: torch.Tensor, pattern: torch.Tensor) -> torch.Tensor:
-    """Blend pattern into images where mask is active. All (B, C/1, H, W)."""
+    """Blend the pattern into the images wherever the mask is active."""
     return images * (1 - masks) + pattern.expand_as(images) * masks
 
 
 def _composite_letterbox(
     pattern: torch.Tensor, items: list[PlateData], imgsz: int
 ) -> torch.Tensor:
-    """Composite at original resolution, letterbox for detection. Returns (B, 3, imgsz, imgsz)."""
+    """Composite the pattern onto each plate at its native resolution, then letterbox
+    to a square for the detector. Returns (B, 3, imgsz, imgsz).
+    """
     result = []
     for item in items:
         pat = F.interpolate(pattern, size=item.image.shape[1:], mode="nearest")
