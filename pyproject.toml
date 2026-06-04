@@ -1,9 +1,11 @@
 [project]
-name = "scarecrow"
+name = "scarecrow-alpr"
 version = "0.2.0"
 description = "An adversarial frame pattern optimizer for evading automated license plate recognition, personalized to your plate."
+readme = "README.md"
 requires-python = ">=3.11"
-license = "GPL-3.0-only"
+license = "GPL-3.0-only AND AGPL-3.0-only"
+license-files = ["LICENSE", "LICENSES/AGPL-3.0-only.txt", "THIRD_PARTY_NOTICES.md"]
 authors = [{ name = "Max Harari" }]
 dependencies = [
     "torch>=2.11",
@@ -17,8 +19,13 @@ ocr = ["rapidocr-onnxruntime>=1.4"]
 Repository = "https://github.com/Meltedd/scarecrow"
 
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["uv_build>=0.11.19,<0.12"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "scarecrow"
+module-root = ""
+source-include = ["tests/**", "test_plate.jpg"]
 
 [project.scripts]
 scarecrow = "scarecrow.cli:main"

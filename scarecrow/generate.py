@@ -154,7 +154,7 @@ def _load_plates(
 
 def generate(
     image_path: str | Path,
-    weights: str,
+    weights: str | None,
     config: Config | None = None,
     on_step: Callable | None = None,
 ) -> torch.Tensor:

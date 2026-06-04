@@ -9,7 +9,6 @@ from scarecrow import model as yolo
 from scarecrow.export import export_svg
 from scarecrow.generate import MIN_PLATE_WIDTH, Config, generate
 from scarecrow.io import image_paths, load, load_pattern, save, save_pattern
-from scarecrow.model import BUNDLED_WEIGHTS_FILENAME
 
 
 def _cmd_generate(args) -> int:
@@ -84,7 +83,11 @@ def _cmd_eval(args) -> int:
         try:
             ocr_reader = ocr.load_reader()
         except ImportError:
-            print("rapidocr-onnxruntime required for --ocr. Install: uv sync --extra ocr", file=sys.stderr)
+            print(
+                'rapidocr-onnxruntime required for --ocr. Reinstall with: uv tool install --force '
+                '"scarecrow-alpr[ocr]" --torch-backend cpu',
+                file=sys.stderr,
+            )
             return 1
 
     rows = []
@@ -169,7 +172,7 @@ def _cmd_eval(args) -> int:
                 {
                     "input": str(args.input),
                     "pattern": str(args.pattern),
-                    "weights": str(args.weights),
+                    "weights": str(args.weights) if args.weights is not None else "bundled",
                     "ocr": args.ocr,
                     "images": rows,
                     "summary": summary,
@@ -196,7 +199,7 @@ def main() -> int:
 
     gen = sub.add_parser("generate", help="Generate adversarial frame pattern")
     gen.add_argument("input", metavar="IMAGE", help="Plate image file")
-    gen.add_argument("--weights", metavar="MODEL.pt2", default=BUNDLED_WEIGHTS_FILENAME, help="Detector .pt2 file")
+    gen.add_argument("--weights", metavar="MODEL.pt2", default=None, help="Detector .pt2 file (default: bundled)")
     gen.add_argument("--steps", metavar="N", type=int, default=1000, help="Optimization steps")
     gen.add_argument("--seed", metavar="N", type=int, default=None, help="Reproducible optimization seed")
     gen.add_argument("-o", "--output", metavar="PATTERN.png", help="Output pattern path")
@@ -204,19 +207,19 @@ def main() -> int:
     ap = sub.add_parser("apply", help="Apply pattern to a plate image")
     ap.add_argument("input", metavar="IMAGE", help="Input image")
     ap.add_argument("--pattern", metavar="PATTERN.png", required=True, help="Generated frame pattern PNG")
-    ap.add_argument("--weights", metavar="MODEL.pt2", default=BUNDLED_WEIGHTS_FILENAME, help="Detector .pt2 file")
+    ap.add_argument("--weights", metavar="MODEL.pt2", default=None, help="Detector .pt2 file (default: bundled)")
     ap.add_argument("-o", "--output", metavar="OUT", help="Output image path")
 
     ex = sub.add_parser("export", help="Export SVG frame template")
     ex.add_argument("input", metavar="IMAGE", help="Reference image")
     ex.add_argument("--pattern", metavar="PATTERN.png", required=True, help="Generated frame pattern PNG")
-    ex.add_argument("--weights", metavar="MODEL.pt2", default=BUNDLED_WEIGHTS_FILENAME, help="Detector .pt2 file")
+    ex.add_argument("--weights", metavar="MODEL.pt2", default=None, help="Detector .pt2 file (default: bundled)")
     ex.add_argument("-o", "--output", metavar="FRAME.svg", help="Output SVG path")
 
     ev = sub.add_parser("eval", help="Evaluate pattern effectiveness")
     ev.add_argument("input", metavar="INPUT", help="Image file or directory")
     ev.add_argument("--pattern", metavar="PATTERN.png", required=True, help="Generated frame pattern PNG")
-    ev.add_argument("--weights", metavar="MODEL.pt2", default=BUNDLED_WEIGHTS_FILENAME, help="Detector .pt2 file")
+    ev.add_argument("--weights", metavar="MODEL.pt2", default=None, help="Detector .pt2 file (default: bundled)")
     ev.add_argument("--json", action="store_true", help="Print machine-readable JSON")
     ev.add_argument("--ocr", action="store_true", help="Also run RapidOCR on clean/adversarial plate crops")
 

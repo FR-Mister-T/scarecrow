@@ -1,6 +1,7 @@
 import hashlib
 import warnings
-from pathlib import Path
+from importlib import resources
+from os import PathLike
 
 import numpy as np
 import torch
@@ -9,31 +10,43 @@ import torch.nn.functional as F
 from torch.export.passes import move_to_device_pass
 
 BUNDLED_WEIGHTS_FILENAME = "license-plate-finetune-v1n.pt2"
+BUNDLED_WEIGHTS_PACKAGE = "scarecrow.data"
 BUNDLED_WEIGHTS_SHA256 = "1404fd70f09f2c9fe20c292534b1821b7c8749421fae9cf9fd45a0279c4d9ce8"
 
 
-def _verify_bundled_weights(path: str) -> None:
+def _bundled_weights_resource():
+    return resources.files(BUNDLED_WEIGHTS_PACKAGE).joinpath(BUNDLED_WEIGHTS_FILENAME)
+
+
+def _verify_bundled_weights(path: str | PathLike[str]) -> None:
     """Raise if the file's SHA-256 does not match the pinned bundled weights hash."""
     with open(path, "rb") as f:
         actual = hashlib.file_digest(f, "sha256").hexdigest()
     if actual != BUNDLED_WEIGHTS_SHA256:
         raise RuntimeError(
-            f"SHA-256 mismatch for {path}: expected {BUNDLED_WEIGHTS_SHA256}, got {actual}. "
-            f"Rename the file if it is not the bundled {BUNDLED_WEIGHTS_FILENAME}."
+            f"SHA-256 mismatch for bundled weights at {path}: "
+            f"expected {BUNDLED_WEIGHTS_SHA256}, got {actual}."
         )
 
 
-def load(weights: str, device: str | None = None) -> nn.Module:
+def _load_exported_program(weights: str | PathLike[str]):
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", message=".*not writable.*")
+        return torch.export.load(weights)
+
+
+def load(weights: str | PathLike[str] | None = None, device: str | None = None) -> nn.Module:
     """Load detection model with frozen weights."""
-    if Path(weights).name == BUNDLED_WEIGHTS_FILENAME:
-        _verify_bundled_weights(weights)
     if device is None:
         device = "cuda" if torch.cuda.is_available() else "cpu"
     if device == "cpu":
         warnings.warn("CUDA not available, running on CPU (slower)")
-    with warnings.catch_warnings():
-        warnings.filterwarnings("ignore", message=".*not writable.*")
-        ep = torch.export.load(weights)
+    if weights is None:
+        with resources.as_file(_bundled_weights_resource()) as path:
+            _verify_bundled_weights(path)
+            ep = _load_exported_program(path)
+    else:
+        ep = _load_exported_program(weights)
     ep = move_to_device_pass(ep, device)
     model = ep.module()
     model.requires_grad_(False)

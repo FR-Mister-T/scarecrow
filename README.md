@@ -1,9 +1,9 @@
 # scarecrow
 
-<img src="assets/scarecrow.png" width="160" alt="">
+<img src="https://raw.githubusercontent.com/Meltedd/scarecrow/master/assets/scarecrow.png" width="160" alt="">
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue)](pyproject.toml)
-[![GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE)
+[![GPL-3.0 + AGPL-3.0](https://img.shields.io/badge/license-GPL--3.0%20%2B%20AGPL--3.0-blue)](#license)
 
 Adversarial frame pattern optimization for evading ALPR (automated license plate recognition). Given a photo of your plate, scarecrow generates an optimized grayscale frame pattern and can export an SVG frame template for that pattern, aiming to suppress detection while keeping the plate readable to humans. [Keeps the flock away.](https://www.eff.org/deeplinks/2025/12/effs-investigations-expose-flock-safetys-surveillance-abuses-2025-review)
 
@@ -24,7 +24,7 @@ On the included test plate, scarecrow drops detection confidence from 0.84 to 0.
 
 | Before | After |
 |---|---|
-| ![before](assets/before.jpg) | ![after](assets/after.jpg) |
+| ![before](https://raw.githubusercontent.com/Meltedd/scarecrow/master/assets/before.jpg) | ![after](https://raw.githubusercontent.com/Meltedd/scarecrow/master/assets/after.jpg) |
 
 ## How It Works
 
@@ -47,12 +47,16 @@ The included detection model is a [YOLO11n](https://huggingface.co/morsetechlab/
 
 ## Usage
 
-Requires Python 3.11+. A CUDA GPU is recommended but not required, as optimization also works on CPU (slower).
-
-Install dependencies:
+Scarecrow requires Python 3.11+. The PyPI package `scarecrow-alpr` installs the `scarecrow` command and includes the bundled detector model:
 
 ```bash
-uv sync
+uv tool install scarecrow-alpr --torch-backend cpu
+```
+
+The CPU backend is the recommended default, while GPU users can choose a uv PyTorch backend such as `auto` or a CUDA backend instead of `cpu`. For RapidOCR support, include the `ocr` extra:
+
+```bash
+uv tool install "scarecrow-alpr[ocr]" --torch-backend cpu
 ```
 
 Take a photo of your plate from the front, straight on, with even lighting and minimal angle. Leave some room around the plate because `export` uses that area for the frame. See `test_plate.jpg` for an example.
@@ -73,7 +77,7 @@ scarecrow apply plate.jpg --pattern plate_pattern.png
 # Evaluate detection evasion
 scarecrow eval plate.jpg --pattern plate_pattern.png
 
-# Evaluate RapidOCR reads (requires rapidocr: uv sync --extra ocr)
+# Evaluate RapidOCR reads (requires the ocr extra)
 scarecrow eval plate.jpg --pattern plate_pattern.png --ocr
 
 # Emit structured eval results
@@ -81,6 +85,21 @@ scarecrow eval plate.jpg --pattern plate_pattern.png --json
 ```
 
 `generate` writes the reusable optimized pattern PNG. `export` combines that pattern with the original reference image geometry and writes an SVG frame template sized for printing at 100%.
+
+## Development
+
+For local development from a checkout, use `uv sync` and run the CLI through `uv run`:
+
+```bash
+uv sync
+uv run scarecrow generate test_plate.jpg --steps 10
+```
+
+Add RapidOCR support with:
+
+```bash
+uv sync --extra ocr
+```
 
 ## Using your own detection model
 
@@ -115,4 +134,4 @@ Then pass `--weights your-model.pt2` to any scarecrow command.
 
 ## License
 
-GPL-3.0. See [LICENSE](LICENSE).
+Project code is GPL-3.0-only, and the bundled detector model is AGPL-3.0-only. See [THIRD_PARTY_NOTICES.md](https://github.com/Meltedd/scarecrow/blob/master/THIRD_PARTY_NOTICES.md) for model provenance.

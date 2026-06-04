@@ -156,14 +156,13 @@ class TestGenerateReproducibility:
         monkeypatch.setattr(torch.cuda, "is_available", lambda: False)
 
         repo = Path(__file__).parent.parent
-        weights = str(repo / "license-plate-finetune-v1n.pt2")
         image = str(repo / "test_plate.jpg")
 
         base = Config(steps=3, eot_samples=2, seed=42)
-        first = generate(image, weights, base)
-        second = generate(image, weights, base)
+        first = generate(image, None, base)
+        second = generate(image, None, base)
         assert torch.equal(first, second)
 
         alt = Config(steps=3, eot_samples=2, seed=99)
-        third = generate(image, weights, alt)
+        third = generate(image, None, alt)
         assert not torch.equal(first, third)
