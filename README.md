@@ -46,11 +46,11 @@ Optimizing the pattern across this whole range of transformations is called Expe
 
 The included detection model is a [YOLO11n](https://huggingface.co/morsetechlab/yolov11-license-plate-detection) plate detector exported via `torch.export`. If you're targeting a different detector, see [Using your own detection model](#using-your-own-detection-model) below.
 
-## Usage
+## Installation
 
-Scarecrow requires Python 3.11+. The PyPI package `scarecrow-alpr` installs the `scarecrow` command and includes the bundled detector model.
+Scarecrow requires Python 3.11+. It is published on PyPI as `scarecrow-alpr`, and installs the `scarecrow` command.
 
-Install [uv](https://docs.astral.sh/uv/getting-started/installation/) first if you do not already have it.
+Install the [uv package manager](https://docs.astral.sh/uv/getting-started/installation/) before running these commands.
 
 For the simpler (but slower) CPU install:
 
@@ -70,23 +70,31 @@ For RapidOCR support, add the `ocr` extra to either command:
 uv tool install "scarecrow-alpr[ocr]" --torch-backend cpu
 ```
 
-Take a photo of your plate from the front, straight on, with even lighting and minimal angle. Leave some room around the plate because `export` uses that area for the frame. See `test_plate.jpg` for an example.
+## Usage
+
+Take a photo of your plate from the front, straight on, with even lighting and some room around the plate. `export` uses the surrounding area to size the frame. See `test_plate.jpg` for an example.
+
+Generate the reusable pattern, then export the printable SVG frame:
 
 ```bash
-# Generate a frame pattern for your plate (takes a few minutes on GPU)
 scarecrow generate plate.jpg
+scarecrow export plate.jpg --pattern plate_pattern.png
+```
 
+By default, these write `plate_pattern.png` and `plate_frame.svg`.
+
+Preview the pattern on your reference photo, or check detection results:
+
+```bash
+scarecrow apply plate.jpg --pattern plate_pattern.png
+scarecrow eval plate.jpg --pattern plate_pattern.png
+```
+
+Other useful options:
+
+```bash
 # Reproducible generation with a fixed seed
 scarecrow generate plate.jpg --seed 42
-
-# Export an SVG frame template for printing
-scarecrow export plate.jpg --pattern plate_pattern.png
-
-# Preview the result
-scarecrow apply plate.jpg --pattern plate_pattern.png
-
-# Evaluate detection evasion
-scarecrow eval plate.jpg --pattern plate_pattern.png
 
 # Evaluate RapidOCR reads (requires the ocr extra)
 scarecrow eval plate.jpg --pattern plate_pattern.png --ocr
@@ -94,8 +102,6 @@ scarecrow eval plate.jpg --pattern plate_pattern.png --ocr
 # Emit structured eval results
 scarecrow eval plate.jpg --pattern plate_pattern.png --json
 ```
-
-`generate` writes the reusable optimized pattern PNG. `export` combines that pattern with the original reference image geometry and writes an SVG frame template sized for printing at 100%.
 
 ## Development
 
